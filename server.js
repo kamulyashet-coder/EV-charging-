@@ -5,42 +5,87 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// In-memory data
+
+// ====================================================
+// IN-MEMORY DATA
+// ====================================================
+
 let data = [];
 let nextId = 1;
 
-/*
-====================================================
-GET API
-Get all stations and bookings
-====================================================
-*/
-app.get("/api/data", (req, res) => {
-    res.json({
-        success: true,
-        data: data
-    });
+
+// ====================================================
+// INVALID JSON ERROR HANDLER
+// ====================================================
+
+app.use((err, req, res, next) => {
+
+    if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+
+        return res.status(400).json({
+            success: false,
+            message: "Invalid JSON format. Please enter valid JSON."
+        });
+
+    }
+
+    next(err);
 });
 
 
-/*
-====================================================
-POST API
-Create a station or booking
-====================================================
-*/
+// ====================================================
+// GET API
+// Get all stations and bookings
+// ====================================================
+
+app.get("/api/data", (req, res) => {
+
+    res.status(200).json({
+        success: true,
+        data: data
+    });
+
+});
+
+
+// ====================================================
+// POST API
+// Create station or booking
+// ====================================================
+
 app.post("/api/data", (req, res) => {
+
     const { type } = req.body;
 
-    if (!type || (type !== "station" && type !== "booking")) {
+
+    // Check type
+
+    if (!type) {
+
         return res.status(400).json({
             success: false,
-            message: "Type must be station or booking"
+            message: "Please enter type."
         });
+
     }
 
-    // Create Station
+
+    if (type !== "station" && type !== "booking") {
+
+        return res.status(400).json({
+            success: false,
+            message: "Type must be station or booking."
+        });
+
+    }
+
+
+    // =================================================
+    // CREATE STATION
+    // =================================================
+
     if (type === "station") {
+
         const {
             name,
             location,
@@ -49,6 +94,7 @@ app.post("/api/data", (req, res) => {
             status
         } = req.body;
 
+
         if (
             !name ||
             !location ||
@@ -56,33 +102,56 @@ app.post("/api/data", (req, res) => {
             availableSlots === undefined ||
             !status
         ) {
+
             return res.status(400).json({
                 success: false,
-                message: "All station details are required"
+                message: "Please enter all station details."
             });
+
         }
 
+
         const station = {
+
             id: nextId++,
+
             type: "station",
+
             name: name,
+
             location: location,
+
             chargerType: chargerType,
+
             availableSlots: availableSlots,
+
             status: status
+
         };
+
 
         data.push(station);
 
+
         return res.status(201).json({
+
             success: true,
-            message: "Station created successfully",
+
+            message: "Station created successfully.",
+
             data: station
+
         });
+
     }
 
-    // Create Booking
+
+    // =================================================
+    // CREATE BOOKING
+    // =================================================
+
     if (type === "booking") {
+
         const {
             stationId,
             vehicleNumber,
@@ -90,102 +159,219 @@ app.post("/api/data", (req, res) => {
             bookingTime
         } = req.body;
 
+
         if (
             stationId === undefined ||
             !vehicleNumber ||
             !bookingDate ||
             !bookingTime
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: "All booking details are required"
+
+                message: "Please enter all booking details."
+
             });
+
         }
 
+
+        // Check station exists
+
+        const station = data.find(
+            item =>
+                item.id === Number(stationId) &&
+                item.type === "station"
+        );
+
+
+        if (!station) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Station not found."
+
+            });
+
+        }
+
+
         const booking = {
+
             id: nextId++,
+
             type: "booking",
-            stationId: stationId,
+
+            stationId: Number(stationId),
+
             vehicleNumber: vehicleNumber,
+
             bookingDate: bookingDate,
+
             bookingTime: bookingTime
+
         };
+
 
         data.push(booking);
 
+
         return res.status(201).json({
+
             success: true,
-            message: "Booking created successfully",
+
+            message: "Booking created successfully.",
+
             data: booking
+
         });
+
     }
+
 });
 
 
-/*
-====================================================
-PUT API
-Update an existing station or booking
-====================================================
-*/
+// ====================================================
+// PUT API
+// Update station or booking
+// ====================================================
+
 app.put("/api/data/:id", (req, res) => {
+
     const id = parseInt(req.params.id);
+
     const { type } = req.body;
 
-    if (!type || (type !== "station" && type !== "booking")) {
+
+    if (!type) {
+
         return res.status(400).json({
+
             success: false,
-            message: "Type must be station or booking"
+
+            message: "Please enter type."
+
         });
+
     }
 
-    const item = data.find(item => item.id === id);
+
+    if (type !== "station" && type !== "booking") {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message: "Type must be station or booking."
+
+        });
+
+    }
+
+
+    const item = data.find(
+        item => item.id === id
+    );
+
 
     if (!item) {
+
         return res.status(404).json({
+
             success: false,
-            message: "Data not found"
+
+            message: "Data not found."
+
         });
+
     }
 
-    // Update Booking
+
+    // =================================================
+    // UPDATE BOOKING
+    // =================================================
+
     if (type === "booking") {
 
-        const { vehicleNumber } = req.body;
-
-        if (!vehicleNumber) {
-            return res.status(400).json({
-                success: false,
-                message: "Vehicle number is required"
-            });
-        }
-
         if (item.type !== "booking") {
+
             return res.status(400).json({
+
                 success: false,
-                message: "The given ID is not a booking"
+
+                message: "The given ID is not a booking."
+
             });
+
         }
+
+
+        const {
+            vehicleNumber,
+            bookingDate,
+            bookingTime
+        } = req.body;
+
+
+        if (
+            !vehicleNumber ||
+            !bookingDate ||
+            !bookingTime
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "Please enter all booking details."
+
+            });
+
+        }
+
 
         item.vehicleNumber = vehicleNumber;
 
+        item.bookingDate = bookingDate;
+
+        item.bookingTime = bookingTime;
+
+
         return res.json({
+
             success: true,
-            message: "Booking updated successfully",
+
+            message: "Booking updated successfully.",
+
             data: item
+
         });
+
     }
 
 
-    // Update Station
+    // =================================================
+    // UPDATE STATION
+    // =================================================
+
     if (type === "station") {
 
         if (item.type !== "station") {
+
             return res.status(400).json({
+
                 success: false,
-                message: "The given ID is not a station"
+
+                message: "The given ID is not a station."
+
             });
+
         }
+
 
         const {
             name,
@@ -195,6 +381,7 @@ app.put("/api/data/:id", (req, res) => {
             status
         } = req.body;
 
+
         if (
             !name ||
             !location ||
@@ -202,60 +389,97 @@ app.put("/api/data/:id", (req, res) => {
             availableSlots === undefined ||
             !status
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: "All station details are required"
+
+                message: "Please enter all station details."
+
             });
+
         }
 
+
         item.name = name;
+
         item.location = location;
+
         item.chargerType = chargerType;
+
         item.availableSlots = availableSlots;
+
         item.status = status;
 
+
         return res.json({
+
             success: true,
-            message: "Station updated successfully",
+
+            message: "Station updated successfully.",
+
             data: item
+
         });
+
     }
+
 });
 
 
-/*
-====================================================
-DELETE API
-Delete a station or booking
-====================================================
-*/
+// ====================================================
+// DELETE API
+// Delete station or booking
+// ====================================================
+
 app.delete("/api/data/:id", (req, res) => {
+
     const id = parseInt(req.params.id);
 
-    const index = data.findIndex(item => item.id === id);
+
+    const index = data.findIndex(
+        item => item.id === id
+    );
+
 
     if (index === -1) {
+
         return res.status(404).json({
+
             success: false,
-            message: "Data not found"
+
+            message: "Data not found."
+
         });
+
     }
 
-    const deletedData = data.splice(index, 1);
+
+    const deletedData =
+        data.splice(index, 1);
+
 
     res.json({
+
         success: true,
-        message: "Data deleted successfully",
+
+        message: "Data deleted successfully.",
+
         data: deletedData[0]
+
     });
+
 });
 
 
-/*
-====================================================
-START SERVER
-====================================================
-*/
+// ====================================================
+// START SERVER
+// ====================================================
+
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+
+    console.log(
+        `Server running on http://localhost:${PORT}`
+    );
+
 });

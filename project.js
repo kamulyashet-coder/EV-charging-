@@ -1,6 +1,5 @@
 /* =====================================================
    EV CHARGEHUB - FRONTEND ONLY
-   NO BACKEND CONNECTION
 ===================================================== */
 
 
@@ -9,8 +8,6 @@
 ===================================================== */
 
 const stations = [
-
-    /* ================= MANGALORE ================= */
 
     {
         id: 1,
@@ -60,9 +57,6 @@ const stations = [
         chargers: 7
     },
 
-
-    /* ================= UDUPI ================= */
-
     {
         id: 5,
         name: "Udupi City EV Hub",
@@ -110,9 +104,6 @@ const stations = [
         contact: "9876543223",
         chargers: 9
     },
-
-
-    /* ================= MYSORE ================= */
 
     {
         id: 9,
@@ -162,9 +153,6 @@ const stations = [
         chargers: 10
     },
 
-
-    /* ================= BANGALORE ================= */
-
     {
         id: 13,
         name: "Bangalore Electronic City EV Hub",
@@ -212,9 +200,6 @@ const stations = [
         contact: "9876543243",
         chargers: 9
     },
-
-
-    /* ================= PUTTUR ================= */
 
     {
         id: 17,
@@ -264,9 +249,6 @@ const stations = [
         chargers: 6
     },
 
-
-    /* ================= TUMKUR ================= */
-
     {
         id: 21,
         name: "Tumkur Central EV Hub",
@@ -314,7 +296,6 @@ const stations = [
         contact: "9876543263",
         chargers: 7
     }
-
 ];
 
 
@@ -345,7 +326,7 @@ const bookingCount =
 
 
 /* =====================================================
-   DISPLAY ALL STATIONS
+   DISPLAY STATIONS
 ===================================================== */
 
 function displayStations(list) {
@@ -355,25 +336,36 @@ function displayStations(list) {
     stationCount.textContent =
         `${list.length} station(s) found`;
 
-
     if (list.length === 0) {
 
         stationContainer.innerHTML = `
             <div class="error-message">
                 ❌ No charging station found.
-                Try another city, station name or charging type.
             </div>
         `;
 
         return;
     }
 
-
     list.forEach(station => {
 
         let statusClass =
             station.availability.toLowerCase();
 
+        let busyMessage = "";
+
+        if (station.availability === "Busy") {
+
+            const availableAfter =
+                getBusyEndTime();
+
+            busyMessage = `
+                <p style="color:#92400e;font-weight:bold;">
+                    ⏳ Busy now. Booking available after
+                    ${availableAfter}
+                </p>
+            `;
+        }
 
         stationContainer.innerHTML += `
 
@@ -383,17 +375,11 @@ function displayStations(list) {
                     ⚡
                 </div>
 
-                <h3>
-                    ${station.name}
-                </h3>
+                <h3>${station.name}</h3>
 
-                <p>
-                    📍 ${station.city}
-                </p>
+                <p>📍 ${station.city}</p>
 
-                <p>
-                    🏠 ${station.address}
-                </p>
+                <p>🏠 ${station.address}</p>
 
                 <span class="type">
                     🔌 ${station.type}
@@ -405,9 +391,9 @@ function displayStations(list) {
                     ${station.availability}
                 </span>
 
-                <p>
-                    🕐 ${station.hours}
-                </p>
+                ${busyMessage}
+
+                <p>🕐 ${station.hours}</p>
 
                 <div class="card-buttons">
 
@@ -426,16 +412,36 @@ function displayStations(list) {
                 </div>
 
             </div>
-
         `;
-
     });
-
 }
 
 
 /* =====================================================
-   SEARCH FUNCTION
+   GET BUSY END TIME
+   BUSY = CURRENT TIME + 1 HOUR
+===================================================== */
+
+function getBusyEndTime() {
+
+    const now = new Date();
+
+    now.setHours(
+        now.getHours() + 1
+    );
+
+    return now.toLocaleTimeString(
+        [],
+        {
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+
+/* =====================================================
+   SEARCH
 ===================================================== */
 
 function searchStations() {
@@ -447,13 +453,11 @@ function searchStations() {
         .trim()
         .toLowerCase();
 
-
     const city =
         document
         .getElementById("cityFilter")
         .value
         .toLowerCase();
-
 
     const type =
         document
@@ -461,29 +465,16 @@ function searchStations() {
         .value
         .toLowerCase();
 
-
     const availability =
         document
         .getElementById("availabilityFilter")
         .value
         .toLowerCase();
 
-
     const filtered =
         stations.filter(station => {
 
-
-            /*
-               SEARCH CHECKS:
-
-               1. Station name
-               2. City
-               3. Address
-               4. Charging type
-            */
-
             const matchesSearch =
-
                 station.name.toLowerCase()
                     .includes(searchText)
 
@@ -502,54 +493,39 @@ function searchStations() {
                 station.type.toLowerCase()
                     .includes(searchText);
 
-
             const matchesCity =
                 city === "all" ||
                 station.city.toLowerCase() === city;
 
-
             const matchesType =
                 type === "all" ||
                 station.type.toLowerCase() === type;
-
 
             const matchesAvailability =
                 availability === "all" ||
                 station.availability.toLowerCase()
                     === availability;
 
-
             return (
-
                 matchesSearch &&
                 matchesCity &&
                 matchesType &&
                 matchesAvailability
-
             );
-
         });
 
-
     displayStations(filtered);
-
 }
 
 
 /* =====================================================
-   APPLY FILTERS
+   FILTERS
 ===================================================== */
 
 function applyFilters() {
-
     searchStations();
-
 }
 
-
-/* =====================================================
-   CLEAR FILTERS
-===================================================== */
 
 function clearFilters() {
 
@@ -562,12 +538,11 @@ function clearFilters() {
     document.getElementById("availabilityFilter").value = "all";
 
     displayStations(stations);
-
 }
 
 
 /* =====================================================
-   SHOW STATION DETAILS
+   STATION DETAILS
 ===================================================== */
 
 function showDetails(id) {
@@ -575,6 +550,14 @@ function showDetails(id) {
     const station =
         stations.find(s => s.id === id);
 
+    let availabilityText =
+        station.availability;
+
+    if (station.availability === "Busy") {
+
+        availabilityText +=
+            ` - Booking available after ${getBusyEndTime()}`;
+    }
 
     document.getElementById("stationDetails").innerHTML = `
 
@@ -582,57 +565,56 @@ function showDetails(id) {
 
         <br>
 
-        <p><strong>Location:</strong>
+        <p>
+            <strong>Location:</strong>
             ${station.city}
         </p>
 
-        <p><strong>Address:</strong>
+        <p>
+            <strong>Address:</strong>
             ${station.address}
         </p>
 
-        <p><strong>Charging Type:</strong>
+        <p>
+            <strong>Charging Type:</strong>
             ${station.type}
         </p>
 
-        <p><strong>Availability:</strong>
-            ${station.availability}
+        <p>
+            <strong>Availability:</strong>
+            ${availabilityText}
         </p>
 
-        <p><strong>Operating Hours:</strong>
+        <p>
+            <strong>Operating Hours:</strong>
             ${station.hours}
         </p>
 
-        <p><strong>Contact:</strong>
+        <p>
+            <strong>Contact:</strong>
             ${station.contact}
         </p>
 
-        <p><strong>Number of Chargers:</strong>
+        <p>
+            <strong>Number of Chargers:</strong>
             ${station.chargers}
         </p>
-
     `;
-
 
     document.getElementById("detailsModal")
         .style.display = "flex";
-
 }
 
-
-/* =====================================================
-   CLOSE DETAILS
-===================================================== */
 
 function closeDetails() {
 
     document.getElementById("detailsModal")
         .style.display = "none";
-
 }
 
 
 /* =====================================================
-   SELECT STATION FOR BOOKING
+   SELECT STATION
 ===================================================== */
 
 function selectStation(id) {
@@ -645,33 +627,35 @@ function selectStation(id) {
         .scrollIntoView({
             behavior: "smooth"
         });
-
 }
 
 
 /* =====================================================
-   LOAD STATIONS INTO BOOKING SELECT
+   LOAD STATIONS
 ===================================================== */
 
 function loadStationOptions() {
 
+    stationSelect.innerHTML = `
+        <option value="">
+            Select a station
+        </option>
+    `;
+
     stations.forEach(station => {
 
         stationSelect.innerHTML += `
-
             <option value="${station.id}">
                 ${station.name} - ${station.city}
             </option>
-
         `;
-
     });
-
 }
 
 
 /* =====================================================
-   AUTOMATIC CHARGING TYPE
+   CHARGING TYPE
+   ONLY THE STATION'S TYPE IS ALLOWED
 ===================================================== */
 
 function updateChargingType() {
@@ -679,43 +663,43 @@ function updateChargingType() {
     const stationId =
         Number(stationSelect.value);
 
-
     const station =
         stations.find(
             s => s.id === stationId
         );
-
 
     if (!station) {
 
         chargingType.value = "";
 
         return;
-
     }
 
-
     /*
-       Automatically select the
-       charging type available
-       at this station.
+       Only the charging type provided
+       by the selected station is allowed.
     */
 
     chargingType.value =
         station.type;
 
+    /*
+       Disable the dropdown so the user
+       cannot select another type.
+    */
+
+    chargingType.disabled = true;
 }
 
 
 /* =====================================================
-   VALIDATION FUNCTIONS
+   ERROR FUNCTIONS
 ===================================================== */
 
 function showError(id, message) {
 
     document.getElementById(id)
         .textContent = message;
-
 }
 
 
@@ -727,12 +711,87 @@ function clearErrors() {
             element.textContent = "";
 
         });
-
 }
 
 
 /* =====================================================
-   BOOKING VALIDATION
+   CHECK BUSY TIME
+===================================================== */
+
+function checkBusyTime(station, selectedDate, selectedTime) {
+
+    /*
+       Only stations marked Busy
+       have a temporary busy period.
+    */
+
+    if (station.availability !== "Busy") {
+
+        return {
+            busy: false
+        };
+    }
+
+
+    const now = new Date();
+
+
+    /*
+       Create selected booking date/time.
+    */
+
+    const selectedDateTime =
+        new Date(
+            `${selectedDate}T${selectedTime}`
+        );
+
+
+    /*
+       Busy period ends one hour
+       after current time.
+    */
+
+    const busyEnd =
+        new Date(
+            now.getTime() +
+            60 * 60 * 1000
+        );
+
+
+    /*
+       If booking date is today and
+       selected time falls before the
+       busy period ends, reject it.
+    */
+
+    if (
+        selectedDateTime >= now &&
+        selectedDateTime < busyEnd
+    ) {
+
+        return {
+
+            busy: true,
+
+            availableAfter: busyEnd.toLocaleTimeString(
+                [],
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
+            )
+        };
+    }
+
+
+    return {
+        busy: false
+    };
+}
+
+
+/* =====================================================
+   BOOKING FORM
 ===================================================== */
 
 bookingForm.addEventListener(
@@ -740,7 +799,6 @@ bookingForm.addEventListener(
     function(event) {
 
         event.preventDefault();
-
 
         clearErrors();
 
@@ -799,7 +857,6 @@ bookingForm.addEventListener(
             valid = false;
 
         }
-
         else if (!/^[A-Za-z ]{3,}$/.test(name)) {
 
             showError(
@@ -808,7 +865,6 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
@@ -824,7 +880,6 @@ bookingForm.addEventListener(
             valid = false;
 
         }
-
         else if (!/^[6-9][0-9]{9}$/.test(mobile)) {
 
             showError(
@@ -833,7 +888,6 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
@@ -849,7 +903,6 @@ bookingForm.addEventListener(
             valid = false;
 
         }
-
         else if (
             !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
             .test(email)
@@ -861,7 +914,6 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
@@ -877,7 +929,6 @@ bookingForm.addEventListener(
             valid = false;
 
         }
-
         else if (
             !/^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/
             .test(vehicle)
@@ -889,7 +940,6 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
@@ -903,7 +953,6 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
@@ -917,40 +966,25 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
-        /*
-           VERY IMPORTANT VALIDATION
+        /* CHECK STATION TYPE */
 
-           Check whether the selected
-           charging type actually exists
-           at selected station.
-        */
-
-        if (stationId && selectedType) {
-
-            const station =
-                stations.find(
-                    s => s.id === stationId
-                );
+        const station =
+            stations.find(
+                s => s.id === stationId
+            );
 
 
-            if (
-                !station ||
-                station.type !== selectedType
-            ) {
+        if (station && selectedType !== station.type) {
 
-                showError(
-                    "typeError",
-                    `This station does not provide ${selectedType}. Available type: ${station.type}`
-                );
+            showError(
+                "typeError",
+                `Only ${station.type} charging is available at this station.`
+            );
 
-                valid = false;
-
-            }
-
+            valid = false;
         }
 
 
@@ -966,13 +1000,17 @@ bookingForm.addEventListener(
             valid = false;
 
         }
-
         else {
 
             const today =
                 new Date();
 
-            today.setHours(0,0,0,0);
+            today.setHours(
+                0,
+                0,
+                0,
+                0
+            );
 
 
             const selectedDate =
@@ -987,9 +1025,7 @@ bookingForm.addEventListener(
                 );
 
                 valid = false;
-
             }
-
         }
 
 
@@ -1003,11 +1039,10 @@ bookingForm.addEventListener(
             );
 
             valid = false;
-
         }
 
 
-        /* STOP IF INVALID */
+        /* STOP */
 
         if (!valid) {
 
@@ -1016,28 +1051,19 @@ bookingForm.addEventListener(
             ).innerHTML = `
 
                 <div class="error-message">
-
                     ❌ Please correct all
                     validation errors.
-
                 </div>
 
             `;
 
             return;
-
         }
 
 
         /* =================================================
-           CHECK STATION AVAILABILITY
+           MAINTENANCE CHECK
         ================================================= */
-
-        const station =
-            stations.find(
-                s => s.id === stationId
-            );
-
 
         if (station.availability === "Maintenance") {
 
@@ -1055,7 +1081,50 @@ bookingForm.addEventListener(
             `;
 
             return;
+        }
 
+
+        /* =================================================
+           BUSY TIME CHECK
+        ================================================= */
+
+        const busyCheck =
+            checkBusyTime(
+                station,
+                date,
+                time
+            );
+
+
+        if (busyCheck.busy) {
+
+            showError(
+                "timeError",
+                `Station is busy at this time. Try after ${busyCheck.availableAfter}.`
+            );
+
+
+            document.getElementById(
+                "bookingMessage"
+            ).innerHTML = `
+
+                <div class="error-message">
+
+                    ❌ This station is busy at
+                    ${time}.
+
+                    <br><br>
+
+                    Please try booking after
+                    <strong>
+                        ${busyCheck.availableAfter}
+                    </strong>.
+
+                </div>
+
+            `;
+
+            return;
         }
 
 
@@ -1088,7 +1157,6 @@ bookingForm.addEventListener(
             time: time,
 
             status: "Confirmed"
-
         };
 
 
@@ -1108,7 +1176,7 @@ bookingForm.addEventListener(
 
 
         /* =================================================
-           SUCCESS MESSAGE
+           SUCCESS
         ================================================= */
 
         document.getElementById(
@@ -1117,7 +1185,9 @@ bookingForm.addEventListener(
 
             <div class="success-message">
 
-                ✅ Booking Confirmed Successfully! <br><br>
+                ✅ Booking Confirmed Successfully!
+
+                <br><br>
 
                 <strong>Booking ID:</strong>
                 ${booking.id}
@@ -1126,6 +1196,11 @@ bookingForm.addEventListener(
 
                 <strong>Station:</strong>
                 ${station.name}
+
+                <br>
+
+                <strong>Charging Type:</strong>
+                ${station.type}
 
                 <br>
 
@@ -1146,9 +1221,10 @@ bookingForm.addEventListener(
 
         chargingType.value = "";
 
+        chargingType.disabled = false;
+
 
         displayBookings();
-
     }
 );
 
@@ -1167,7 +1243,6 @@ function displayBookings() {
 
     bookingContainer.innerHTML = "";
 
-
     bookingCount.textContent =
         `${bookings.length} booking(s)`;
 
@@ -1177,15 +1252,12 @@ function displayBookings() {
         bookingContainer.innerHTML = `
 
             <div class="error-message">
-
                 No bookings available.
-
             </div>
 
         `;
 
         return;
-
     }
 
 
@@ -1239,7 +1311,6 @@ function displayBookings() {
                     ${booking.status}
                 </p>
 
-
                 ${
                     booking.status === "Confirmed"
 
@@ -1258,15 +1329,11 @@ function displayBookings() {
                     `<p style="color:red;">
                         ❌ Booking Cancelled
                     </p>`
-
                 }
 
             </div>
-
         `;
-
     });
-
 }
 
 
@@ -1290,12 +1357,9 @@ function cancelBooking(id) {
 
     if (!booking) {
 
-        alert(
-            "Booking not found."
-        );
+        alert("Booking not found.");
 
         return;
-
     }
 
 
@@ -1308,7 +1372,6 @@ function cancelBooking(id) {
     if (!confirmation) {
 
         return;
-
     }
 
 
@@ -1328,7 +1391,6 @@ function cancelBooking(id) {
     alert(
         "✅ Booking cancelled successfully!"
     );
-
 }
 
 
@@ -1343,7 +1405,6 @@ function scrollToStations() {
         .scrollIntoView({
             behavior: "smooth"
         });
-
 }
 
 
@@ -1374,3 +1435,14 @@ document.getElementById(
     "min",
     today
 );
+
+
+/* =====================================================
+   REFRESH BUSY TIME EVERY MINUTE
+===================================================== */
+
+setInterval(() => {
+
+    displayStations(stations);
+
+}, 60000);
